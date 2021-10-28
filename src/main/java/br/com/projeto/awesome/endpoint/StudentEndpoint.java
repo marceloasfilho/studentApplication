@@ -1,47 +1,71 @@
 package br.com.projeto.awesome.endpoint;
 
+import br.com.projeto.awesome.exception.ResourceNotFoundException;
 import br.com.projeto.awesome.model.Student;
+import br.com.projeto.awesome.repository.StudentDAO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("students")
 public class StudentEndpoint {
-    @RequestMapping(method = RequestMethod.GET, path = "/listAll")
-    public ResponseEntity<?> listAll() {
-        return new ResponseEntity<>(Student.friends, HttpStatus.OK);
+
+    private final StudentDAO studentDAO;
+
+    public StudentEndpoint(StudentDAO studentDAO) {
+        this.studentDAO = studentDAO;
     }
 
-    @RequestMapping(method = RequestMethod.GET, path = "{id}")
-    public ResponseEntity<?> getStudentById(@PathVariable("id") Integer id) {
-        Student desired = new Student();
-        desired.setId(id);
-        int index = Student.friends.indexOf(desired);
+    @RequestMapping(method = RequestMethod.GET, path = "/listAll")
+    public ResponseEntity<?> listAll() {
+        return new ResponseEntity<>(this.studentDAO.findAll(), HttpStatus.OK);
+    }
 
-        if (index >= 0) {
-            return new ResponseEntity<>(Student.friends.get(index), HttpStatus.OK);
+    @GetMapping(path = "{name}")
+    public ResponseEntity<?> getStudentsByName(@PathVariable("name") String name) {
+        List<Student> foundStudents = this.studentDAO.findByNameIgnoreCaseContaining(name);
+        if (foundStudents.size() > 0) {
+            return new ResponseEntity<>(foundStudents, HttpStatus.OK);
         } else {
-            return new ResponseEntity<>("Student not found with id = " + id, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(foundStudents, HttpStatus.NOT_FOUND);
         }
     }
 
-    @RequestMapping(method = RequestMethod.POST)
-    public ResponseEntity<?> save(@RequestBody Student student){
-        Student.friends.add(student);
-        return new ResponseEntity<>(student, HttpStatus.OK);
+    @GetMapping(path = "/findById/{id}")
+    public ResponseEntity<?> getStudentById(@PathVariable("id") Long id) {
+        checkIfStudentExists(id);
+        Optional<Student> result = this.studentDAO.findById(id);
+        return new ResponseEntity<>(result.get(), HttpStatus.OK);
     }
 
-    @RequestMapping(method = RequestMethod.DELETE)
-    public ResponseEntity<?> delete(@RequestBody Student student){
-        Student.friends.remove(student);
-        return new ResponseEntity<>(student, HttpStatus.OK);
+    @PostMapping
+    @Transactional(rollbackFor = Exception.class)
+    public ResponseEntity<?> save(@Valid @RequestBody Student student) {
+        return new ResponseEntity<>(this.studentDAO.save(student), HttpStatus.CREATED);
     }
 
-    @RequestMapping(method = RequestMethod.PUT)
-    public ResponseEntity<?> update (@RequestBody Student student){
-        Student.friends.remove(student);
-        Student.friends.add(student);
+    @DeleteMapping(path = "/deleteById/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        checkIfStudentExists(id);
+        this.studentDAO.deleteById(id);
+        return new ResponseEntity<>(this.listAll(), HttpStatus.OK);
+    }
+
+    @PutMapping
+    public ResponseEntity<?> update(@RequestBody Student student) {
+        this.studentDAO.save(student);
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    public void checkIfStudentExists(Long id) {
+        if (!this.studentDAO.findById(id).isPresent()) {
+            throw new ResourceNotFoundException("Student not found for id: " + id);
+        }
     }
 }
