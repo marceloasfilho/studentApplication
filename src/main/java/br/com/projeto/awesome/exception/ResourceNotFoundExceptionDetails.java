@@ -1,6 +1,6 @@
 package br.com.projeto.awesome.exception;
 
-public class ResourceNotFoundExceptionDetails extends ErrorDetailsAbstract{
+public class ResourceNotFoundExceptionDetails extends ErrorDetails {
 
     private ResourceNotFoundExceptionDetails() {
     }

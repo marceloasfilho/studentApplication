@@ -1,6 +1,6 @@
 package br.com.projeto.awesome.exception;
 
-public class ValidationErrorDetails extends ErrorDetailsAbstract {
+public class ValidationErrorDetails extends ErrorDetails {
 
     private String field;
     private String fieldMessage;
