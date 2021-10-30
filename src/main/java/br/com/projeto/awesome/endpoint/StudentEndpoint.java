@@ -3,9 +3,13 @@ package br.com.projeto.awesome.endpoint;
 import br.com.projeto.awesome.exception.ResourceNotFoundException;
 import br.com.projeto.awesome.model.Student;
 import br.com.projeto.awesome.repository.StudentDAO;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,7 +43,7 @@ public class StudentEndpoint {
     }
 
     @GetMapping(path = "/findById/{id}")
-    public ResponseEntity<?> getStudentById(@PathVariable("id") Long id) {
+    public ResponseEntity<?> getStudentById(@PathVariable("id") Long id, @AuthenticationPrincipal UserDetails userDetails) {
         checkIfStudentExists(id);
         Optional<Student> result = this.studentDAO.findById(id);
         return new ResponseEntity<>(result.get(), HttpStatus.OK);
@@ -52,10 +56,11 @@ public class StudentEndpoint {
     }
 
     @DeleteMapping(path = "/deleteById/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id, Pageable pageable) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
         checkIfStudentExists(id);
         this.studentDAO.deleteById(id);
-        return new ResponseEntity<>(this.listAll(pageable), HttpStatus.OK);
+        return new ResponseEntity<>(this.listAll(PageRequest.of(0, 5)), HttpStatus.OK);
     }
 
     @PutMapping
