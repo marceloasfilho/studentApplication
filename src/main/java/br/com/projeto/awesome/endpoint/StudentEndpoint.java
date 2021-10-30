@@ -3,6 +3,7 @@ package br.com.projeto.awesome.endpoint;
 import br.com.projeto.awesome.exception.ResourceNotFoundException;
 import br.com.projeto.awesome.model.Student;
 import br.com.projeto.awesome.repository.StudentDAO;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,8 +24,8 @@ public class StudentEndpoint {
     }
 
     @RequestMapping(method = RequestMethod.GET, path = "/listAll")
-    public ResponseEntity<?> listAll() {
-        return new ResponseEntity<>(this.studentDAO.findAll(), HttpStatus.OK);
+    public ResponseEntity<?> listAll(Pageable pageable) {
+        return new ResponseEntity<>(this.studentDAO.findAll(pageable), HttpStatus.OK);
     }
 
     @GetMapping(path = "{name}")
@@ -51,10 +52,10 @@ public class StudentEndpoint {
     }
 
     @DeleteMapping(path = "/deleteById/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable Long id, Pageable pageable) {
         checkIfStudentExists(id);
         this.studentDAO.deleteById(id);
-        return new ResponseEntity<>(this.listAll(), HttpStatus.OK);
+        return new ResponseEntity<>(this.listAll(pageable), HttpStatus.OK);
     }
 
     @PutMapping
